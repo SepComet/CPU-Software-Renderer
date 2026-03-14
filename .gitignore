@@ -1,0 +1,49 @@
+# Visual Studio user-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio build artifacts
+.vs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+out/
+bin/
+obj/
+
+# MSVC intermediate and debug files
+*.obj
+*.ipdb
+*.iobj
+*.ilk
+*.pdb
+*.idb
+*.tlog
+*.lastbuildstate
+*.recipe
+*.log
+
+# CMake / generated project files
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+compile_commands.json
+
+# Test and coverage output
+*.gcno
+*.gcda
+*.profraw
+*.profdata
+*.coverage
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+SDL2-2.32.10-win32-x64.zip
+SDL2-devel-2.32.10-VC.zip
+CPU-Software-Renderer/TODO.md
