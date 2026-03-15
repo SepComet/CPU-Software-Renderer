@@ -13,16 +13,64 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\Core">
+      <UniqueIdentifier>{e546c002-17ba-4911-9a70-a1cf7ce337fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Math">
+      <UniqueIdentifier>{b92096d9-3d39-4064-b9a2-efa279ad0775}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Scene">
+      <UniqueIdentifier>{7b6f5c6b-60bb-46f2-925b-65346e4d8c4b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Shading">
+      <UniqueIdentifier>{1aa3c6ac-a580-480c-a2fe-2d57c98693ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Rasterizer">
+      <UniqueIdentifier>{a7d67eb7-b4bc-4b5a-86f2-e80bcd1518d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Asset">
+      <UniqueIdentifier>{55224e49-7917-4fee-9a61-f1c14ebf8d5e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Core">
+      <UniqueIdentifier>{6eda961b-ec6a-4670-b093-be46b27fdeb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Asset">
+      <UniqueIdentifier>{4345cc0e-3d61-4dd9-b37f-4b42c30aa8d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Rasterizer">
+      <UniqueIdentifier>{4b52509e-dde8-45e0-aeb3-d18131b94265}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Shading">
+      <UniqueIdentifier>{1644176d-c2fe-404b-9f42-45eb0bc85222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\RenderData">
+      <UniqueIdentifier>{c77ae566-281a-4d76-80bd-41496deb0aeb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Color.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="Core\DepthBuffer.cpp">
+      <Filter>源文件\Core</Filter>
     </ClCompile>
-    <ClCompile Include="Rasterization.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="Core\FrameBuffer.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Renderer.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Asset\ObjLoader.cpp">
+      <Filter>源文件\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Shading\BlinnPhongShader.cpp">
+      <Filter>源文件\Shading</Filter>
+    </ClCompile>
+    <ClCompile Include="Rasterizer\Rasterizer.cpp">
+      <Filter>源文件\Rasterizer</Filter>
+    </ClCompile>
+    <ClCompile Include="Rasterizer\TriangleRasterizer.cpp">
+      <Filter>源文件\Rasterizer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -31,14 +79,68 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Color.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="Core\DepthBuffer.h">
+      <Filter>头文件\Core</Filter>
     </ClInclude>
-    <ClInclude Include="StructType.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="Core\FrameBuffer.h">
+      <Filter>头文件\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Rasterization.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="Core\Renderer.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\MathUtil.h">
+      <Filter>头文件\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix4x4.h">
+      <Filter>头文件\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector2.h">
+      <Filter>头文件\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector3.h">
+      <Filter>头文件\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector4.h">
+      <Filter>头文件\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera.h">
+      <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Mesh.h">
+      <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Model.h">
+      <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Transform.h">
+      <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Vertex.h">
+      <Filter>头文件\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Shading\BlinnPhongShader.h">
+      <Filter>头文件\Shading</Filter>
+    </ClInclude>
+    <ClInclude Include="Shading\ShaderTypes.h">
+      <Filter>头文件\Shading</Filter>
+    </ClInclude>
+    <ClInclude Include="Rasterizer\Rasterizer.h">
+      <Filter>头文件\Rasterizer</Filter>
+    </ClInclude>
+    <ClInclude Include="Rasterizer\TriangleRasterizer.h">
+      <Filter>头文件\Rasterizer</Filter>
+    </ClInclude>
+    <ClInclude Include="Asset\ObjLoader.h">
+      <Filter>头文件\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderData\Triangle.h">
+      <Filter>头文件\RenderData</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderData\Color.h">
+      <Filter>头文件\RenderData</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderData\BoundingBox.h">
+      <Filter>头文件\RenderData</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

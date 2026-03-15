@@ -1,17 +1,17 @@
-﻿#include <vector>
-#include <iostream>
+﻿#include <iostream>
 #include <SDL.h>
-#include "Rasterization.h"
-#include "StructType.h"
 #include "SDL_video.h"
 #include "SDL_render.h"
 #include <cstdint>
 #include "SDL_error.h"
-#include <cmath>
+#include "Vector2.h"
+#include "Color.h"
+#include "FrameBuffer.h"
+#include "Rasterizer.h"
 
 const uint32_t SDL_INIT_FLAGS = SDL_INIT_VIDEO;
-const int width = 800;
-const int height = 600;
+const int32_t width = 800;
+const int32_t height = 600;
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
 
@@ -90,20 +90,25 @@ int main(int argc, char* argv[])
 	if (!EnsureSDLWindow()) return -1;
 
 	if (!EnsureRenderer()) return -1;
-
+	
 	SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
 
-	Rasterization* rasterization = new Rasterization(width, height);
+	Core::FrameBuffer frameBuffer(width, height);
+	Rasterizer::Rasterizer rasterizer(frameBuffer);
 
-	CustomStructs::Vector2Int v0(100, 100);
-	CustomStructs::Vector2Int v1(300, 100);
-	CustomStructs::Vector2Int v2(300, 400);
-	CustomStructs::Color color1(255, 0, 0, 255);
-	rasterization->DrawFillTriangle(v0, v1, v2, color1);
+	Math::Vector2Int v0(100, 100);
+	Math::Vector2Int v1(300, 100);
+	Math::Vector2Int v2(300, 400);
+	RenderData::Color color0(255, 0, 0, 255);
+	RenderData::Color color1(0, 255, 0, 255);
+	RenderData::Color color2(0, 0, 255, 255);
+	rasterizer.DrawLine(v0, v1, color0);
+	rasterizer.DrawLine(v1, v2, color1);
+	rasterizer.DrawLine(v2, v0, color2);
 
 	while (true)
 	{
-		SDL_UpdateTexture(texture, nullptr, rasterization->frameBuffer.data(), width * sizeof(uint32_t));
+		SDL_UpdateTexture(texture, nullptr, frameBuffer.get_buffer(), width * sizeof(uint32_t));
 
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, nullptr, nullptr);
