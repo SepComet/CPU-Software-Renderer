@@ -14,6 +14,10 @@ namespace Core
 		std::vector<uint32_t> buffer;
 
 	public:
+		int32_t get_width() const { return width; }
+
+		int32_t get_height() const { return height; }
+
 		size_t total_pixels() const { return buffer.size(); }
 
 		void* get_buffer() const { return (void*)buffer.data(); }

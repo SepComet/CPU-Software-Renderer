@@ -8,15 +8,24 @@
 #include "Color.h"
 #include "FrameBuffer.h"
 #include "Rasterizer.h"
+#include "SDL_events.h"
+#include "SDL_keycode.h"
 
 const uint32_t SDL_INIT_FLAGS = SDL_INIT_VIDEO;
 const int32_t width = 800;
 const int32_t height = 600;
 SDL_Window* window = nullptr;
 SDL_Renderer* renderer = nullptr;
+SDL_Texture* texture = nullptr;
 
 static void ClearSDLResources()
 {
+	if (texture != nullptr)
+	{
+		SDL_DestroyTexture(texture);
+		texture = nullptr;
+	}
+
 	if (renderer != nullptr)
 	{
 		SDL_DestroyRenderer(renderer);
@@ -82,6 +91,21 @@ static bool EnsureRenderer()
 	return true;
 }
 
+static bool EnsureTexture()
+{
+	if (texture != nullptr) return true;
+
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+
+	if (texture == nullptr)
+	{
+		std::cerr << "Texture could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+		ClearSDLResources();
+		return false;
+	}
+	return true;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -91,7 +115,7 @@ int main(int argc, char* argv[])
 
 	if (!EnsureRenderer()) return -1;
 	
-	SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+	if (!EnsureTexture()) return -1;
 
 	Core::FrameBuffer frameBuffer(width, height);
 	Rasterizer::Rasterizer rasterizer(frameBuffer);
@@ -106,10 +130,24 @@ int main(int argc, char* argv[])
 	rasterizer.DrawLine(v1, v2, color1);
 	rasterizer.DrawLine(v2, v0, color2);
 
-	while (true)
+	bool isRuning = true;
+	while (isRuning)
 	{
-		SDL_UpdateTexture(texture, nullptr, frameBuffer.get_buffer(), width * sizeof(uint32_t));
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
+		{
+			if (event.type == SDL_QUIT)
+			{
+				isRuning = false;
+			}
 
+			if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE)
+			{
+				isRuning = false;
+			}
+		}
+
+		SDL_UpdateTexture(texture, nullptr, frameBuffer.get_buffer(), width * sizeof(uint32_t));
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 		SDL_RenderPresent(renderer);

@@ -16,7 +16,6 @@ namespace Core
 	{
 		if (x < 0 || x >= width || y < 0 || y >= height)
 		{
-			std::cerr << "Error: Attempting to set pixel at (" << x << ", " << y << ") which is out of bounds." << std::endl;
 			return;
 		}
 		size_t index = static_cast<size_t>(y) * width + x;

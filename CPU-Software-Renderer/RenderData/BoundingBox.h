@@ -5,10 +5,10 @@ namespace RenderData
 {
 	struct BoundingBox2D
 	{
-		Math::Vector2 min;
-		Math::Vector2 max;
+		Math::Vector2Int min;
+		Math::Vector2Int max;
 
 		BoundingBox2D() : min(), max() {}
-		BoundingBox2D(const Math::Vector2 min, const Math::Vector2 max) : min(min), max(max) {}
+		BoundingBox2D(const Math::Vector2Int min, const Math::Vector2Int max) : min(min), max(max) {}
 	};
 }
