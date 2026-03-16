@@ -92,5 +92,10 @@ namespace Math
 				0, 0, 0, 1
 			);
 		}
+
+		static Vector3 cross(const Vector3& vec1, const Vector3& vec2)
+		{
+			return vec1.cross(vec2);
+		}
 	};
 }
