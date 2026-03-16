@@ -23,16 +23,7 @@ namespace Scene
 		);
 	}
 
-	Math::Matrix4x4 Camera::get_orthographic_projection_matrix(float aspectRatio) const
-	{
-		using namespace Math;
-
-		return Matrix4x4(
-
-		);
-	}
-
-	Math::Matrix4x4 Camera::get_perspective_projection_matrix(float width, float height) const
+	Math::Matrix4x4 Camera::get_orthographic_projection_matrix(float width, float height) const
 	{
 		using namespace Math;
 
@@ -42,13 +33,27 @@ namespace Scene
 		const float t = height * 0.5f;
 		const float n = nearPlane;
 		const float f = farPlane;
-		const float length = n - f;
 
 		return Matrix4x4(
-			2.0f / width, 0, 0, -(r + l) / (r - l) + 1,
-			0, 2.0f / height, 0, -(t + b) / (t - b) + 1,
-			0, 0, 2.0f / length, -(n + f) / (n - f) + 1,
+			2.0f / (r - l), 0, 0, -(r + l) / (r - l),
+			0, 2.0f / (t - b), 0, -(t + b) / (t - b),
+			0, 0, 2.0f / (n - f), -(n + f) / (f - n),
 			0, 0, 0, 1
+		);
+	}
+
+	Math::Matrix4x4 Camera::get_perspective_projection_matrix(float aspectRatio) const
+	{
+		using namespace Math;
+
+		const float n = nearPlane;
+		const float f = farPlane;
+
+		return Matrix4x4(
+			1.0f / (aspectRatio * std::tan(verticalFovRadians / 2)), 0, 0, 0,
+			0, 1.0f / std::tan(verticalFovRadians / 2), 0, 0,
+			0, 0, -(f + n) / (f - n), -(2 * f * n) / (f - n),
+			0, 0, -1, 0
 		);
 	}
 }

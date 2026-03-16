@@ -38,8 +38,8 @@ namespace Scene
 
 		Math::Matrix4x4 get_view_matrix() const;
 
-		Math::Matrix4x4 get_orthographic_projection_matrix(float aspectRatio) const;
+		Math::Matrix4x4 get_orthographic_projection_matrix(float width, float height) const;
 
-		Math::Matrix4x4 get_perspective_projection_matrix(float width, float height) const;
+		Math::Matrix4x4 get_perspective_projection_matrix(float aspectRatio) const;
 	};
 }

@@ -1,13 +1,20 @@
-﻿#include <iostream>
+#include <iostream>
+#include <array>
+#include <cmath>
 #include <SDL.h>
 #include "SDL_video.h"
 #include "SDL_render.h"
 #include <cstdint>
 #include "SDL_error.h"
 #include "Vector2.h"
+#include "Vector3.h"
+#include "Vector4.h"
+#include "Matrix4x4.h"
+#include "MathUtil.h"
 #include "Color.h"
 #include "FrameBuffer.h"
 #include "Rasterizer.h"
+#include "Camera.h"
 #include "SDL_events.h"
 #include "SDL_keycode.h"
 
@@ -106,6 +113,64 @@ static bool EnsureTexture()
 	return true;
 }
 
+struct ProjectedVertex
+{
+	Math::Vector2Int screen;
+	bool visible = false;
+};
+
+struct CubeFace
+{
+	std::array<int, 4> vertices;
+	std::array<int, 4> edges;
+};
+
+static ProjectedVertex ProjectToScreen(
+	const Math::Vector3& vertex,
+	const Math::Matrix4x4& mvp,
+	const int32_t screenWidth,
+	const int32_t screenHeight)
+{
+	using namespace Math;
+
+	const Vector4 clip = mvp * Vector4::Point(vertex);
+	if (std::abs(clip.w) < 1e-5f)
+	{
+		return {};
+	}
+
+	const float invW = 1.0f / clip.w;
+	const float ndcX = clip.x * invW;
+	const float ndcY = clip.y * invW;
+	const float ndcZ = clip.z * invW;
+
+	if (ndcX < -1.0f || ndcX > 1.0f || ndcY < -1.0f || ndcY > 1.0f || ndcZ < -1.0f || ndcZ > 1.0f)
+	{
+		return {};
+	}
+
+	const float screenX = (ndcX * 0.5f + 0.5f) * static_cast<float>(screenWidth - 1);
+	const float screenY = (1.0f - (ndcY * 0.5f + 0.5f)) * static_cast<float>(screenHeight - 1);
+
+	return { Vector2(screenX, screenY).to_vector2Int(), true };
+}
+
+static bool IsFaceVisible(const CubeFace& face, const std::array<Math::Vector3, 8>& viewSpaceVertices)
+{
+	using namespace Math;
+
+	const Vector3& v0 = viewSpaceVertices[face.vertices[0]];
+	const Vector3& v1 = viewSpaceVertices[face.vertices[1]];
+	const Vector3& v2 = viewSpaceVertices[face.vertices[2]];
+	const Vector3 faceNormal = (v1 - v0).cross(v2 - v0);
+	const Vector3 faceCenter =
+		(viewSpaceVertices[face.vertices[0]] +
+		 viewSpaceVertices[face.vertices[1]] +
+		 viewSpaceVertices[face.vertices[2]] +
+		 viewSpaceVertices[face.vertices[3]]) / 4.0f;
+
+	return faceNormal.dot(faceCenter) < 0.0f;
+}
 
 int main(int argc, char* argv[])
 {
@@ -114,21 +179,47 @@ int main(int argc, char* argv[])
 	if (!EnsureSDLWindow()) return -1;
 
 	if (!EnsureRenderer()) return -1;
-	
+
 	if (!EnsureTexture()) return -1;
 
 	Core::FrameBuffer frameBuffer(width, height);
 	Rasterizer::Rasterizer rasterizer(frameBuffer);
 
-	Math::Vector2Int v0(100, 100);
-	Math::Vector2Int v1(300, 100);
-	Math::Vector2Int v2(300, 400);
-	RenderData::Color color0(255, 0, 0, 255);
-	RenderData::Color color1(0, 255, 0, 255);
-	RenderData::Color color2(0, 0, 255, 255);
-	rasterizer.DrawLine(v0, v1, color0);
-	rasterizer.DrawLine(v1, v2, color1);
-	rasterizer.DrawLine(v2, v0, color2);
+	Scene::Camera camera;
+	camera.set_position(Math::Vector3(0.0f, 0.0f, 3.0f));
+	camera.set_target(Math::Vector3(0.0f, 0.0f, 0.0f));
+	camera.set_up(Math::Vector3(0.0f, 1.0f, 0.0f));
+	camera.set_near_plane(0.1f);
+	camera.set_far_plane(100.0f);
+
+	const std::array<Math::Vector3, 8> cubeVertices = {
+		Math::Vector3(-0.5f, -0.5f, -0.5f),
+		Math::Vector3(0.5f, -0.5f, -0.5f),
+		Math::Vector3(0.5f, 0.5f, -0.5f),
+		Math::Vector3(-0.5f, 0.5f, -0.5f),
+		Math::Vector3(-0.5f, -0.5f, 0.5f),
+		Math::Vector3(0.5f, -0.5f, 0.5f),
+		Math::Vector3(0.5f, 0.5f, 0.5f),
+		Math::Vector3(-0.5f, 0.5f, 0.5f)
+	};
+
+	const std::array<std::pair<int, int>, 12> cubeEdges = {
+		std::pair<int, int>(0, 1), std::pair<int, int>(1, 2), std::pair<int, int>(2, 3), std::pair<int, int>(3, 0),
+		std::pair<int, int>(4, 5), std::pair<int, int>(5, 6), std::pair<int, int>(6, 7), std::pair<int, int>(7, 4),
+		std::pair<int, int>(0, 4), std::pair<int, int>(1, 5), std::pair<int, int>(2, 6), std::pair<int, int>(3, 7)
+	};
+	const std::array<CubeFace, 6> cubeFaces = {
+		CubeFace{ { 0, 3, 2, 1 }, { 0, 1, 2, 3 } },
+		CubeFace{ { 4, 5, 6, 7 }, { 4, 5, 6, 7 } },
+		CubeFace{ { 0, 4, 7, 3 }, { 8, 7, 11, 3 } },
+		CubeFace{ { 1, 2, 6, 5 }, { 1, 10, 5, 9 } },
+		CubeFace{ { 0, 1, 5, 4 }, { 0, 9, 4, 8 } },
+		CubeFace{ { 3, 7, 6, 2 }, { 11, 6, 10, 2 } }
+	};
+
+	const RenderData::Color clearColor(18, 18, 24, 255);
+	const RenderData::Color cubeColor(240, 240, 240, 255);
+	const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 
 	bool isRuning = true;
 	while (isRuning)
@@ -147,6 +238,57 @@ int main(int argc, char* argv[])
 			}
 		}
 
+		frameBuffer.clear(clearColor);
+
+		const float timeSeconds = static_cast<float>(SDL_GetTicks()) * 0.001f;
+		const Math::Matrix4x4 model =
+			Math::MathUtil::get_rotation_matrix_y(timeSeconds) *
+			Math::MathUtil::get_rotation_matrix_x(timeSeconds * 0.6f);
+		const Math::Matrix4x4 view = camera.get_view_matrix();
+		const Math::Matrix4x4 modelView = view * model;
+		const Math::Matrix4x4 projection = camera.get_perspective_projection_matrix(aspectRatio);
+		const Math::Matrix4x4 mvp = projection * modelView;
+
+		std::array<Math::Vector3, 8> viewSpaceVertices;
+		std::array<ProjectedVertex, 8> projectedVertices;
+		for (size_t i = 0; i < cubeVertices.size(); ++i)
+		{
+			viewSpaceVertices[i] = (modelView * Math::Vector4::Point(cubeVertices[i])).to_vector3();
+			projectedVertices[i] = ProjectToScreen(cubeVertices[i], mvp, width, height);
+		}
+
+		std::array<bool, 12> visibleEdges = {};
+		for (const CubeFace& face : cubeFaces)
+		{
+			if (!IsFaceVisible(face, viewSpaceVertices))
+			{
+				continue;
+			}
+
+			for (const int edgeIndex : face.edges)
+			{
+				visibleEdges[edgeIndex] = true;
+			}
+		}
+
+		for (size_t edgeIndex = 0; edgeIndex < cubeEdges.size(); ++edgeIndex)
+		{
+			if (!visibleEdges[edgeIndex])
+			{
+				continue;
+			}
+
+			const auto& edge = cubeEdges[edgeIndex];
+			const ProjectedVertex& start = projectedVertices[edge.first];
+			const ProjectedVertex& end = projectedVertices[edge.second];
+			if (!start.visible || !end.visible)
+			{
+				continue;
+			}
+
+			rasterizer.DrawLine(start.screen, end.screen, cubeColor);
+		}
+
 		SDL_UpdateTexture(texture, nullptr, frameBuffer.get_buffer(), width * sizeof(uint32_t));
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, nullptr, nullptr);
@@ -156,4 +298,3 @@ int main(int argc, char* argv[])
 	ClearSDLResources();
 	return 0;
 }
-
