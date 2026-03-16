@@ -20,6 +20,8 @@ namespace Math
 			);
 		}
 
+		static Matrix4x4 get_scale_matrix(const float scale) { return get_scale_matrix(Vector3(scale, scale, scale)); }
+
 		static Matrix4x4 get_scale_matrix(const float x, const float y, const float z) { return get_scale_matrix(Vector3(x, y, z)); }
 
 		static Matrix4x4 get_scale_matrix(const Vector3& scale)
