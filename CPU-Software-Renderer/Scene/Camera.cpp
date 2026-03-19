@@ -2,7 +2,6 @@
 #include "Matrix4x4.h"
 #include "Camera.h"
 #include <Vector3.h>
-#include "MathUtil.h"
 #include <cmath>
 
 namespace Scene
@@ -11,10 +10,10 @@ namespace Scene
 	{
 		using namespace Math;
 
-		Vector3 backward = (position - target).normalized();
-		Vector3 right = MathUtil::cross(up, backward).normalized();
-		if (right.magnitude() < 1e-5) right = MathUtil::cross(Vector3(0, 1, 0), backward);
-		Vector3 cameraUp = MathUtil::cross(backward, right);
+		const Vector3 position = transform.position;
+		const Vector3 right = transform.get_right();
+		const Vector3 cameraUp = transform.get_up();
+		const Vector3 backward = -transform.get_forward();
 
 		return Matrix4x4(
 			right.x, right.y, right.z, -right.dot(position),

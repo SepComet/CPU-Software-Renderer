@@ -81,6 +81,7 @@
       <Filter>资源文件</Filter>
     </None>
     <None Include="..\README.md" />
+    <None Include="..\TODO.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\DepthBuffer.h">

@@ -53,9 +53,9 @@ namespace Math
 			const float sinValue = std::sin(radians);
 
 			return Matrix4x4(
-				cosValue, sinValue, 0, 0,
+				cosValue, 0, sinValue, 0,
 				0, 1, 0, 0,
-				-sinValue, cosValue, 0, 0,
+				-sinValue, 0, cosValue, 0,
 				0, 0, 0, 1
 			);
 		}

@@ -167,9 +167,9 @@ static bool IsFaceVisible(const CubeFace& face, const std::array<Math::Vector3, 
 	const Vector3 faceNormal = (v1 - v0).cross(v2 - v0);
 	const Vector3 faceCenter =
 		(viewSpaceVertices[face.vertices[0]] +
-		 viewSpaceVertices[face.vertices[1]] +
-		 viewSpaceVertices[face.vertices[2]] +
-		 viewSpaceVertices[face.vertices[3]]) / 4.0f;
+			viewSpaceVertices[face.vertices[1]] +
+			viewSpaceVertices[face.vertices[2]] +
+			viewSpaceVertices[face.vertices[3]]) / 4.0f;
 
 	return faceNormal.dot(faceCenter) < 0.0f;
 }
@@ -188,11 +188,8 @@ int main(int argc, char* argv[])
 	Rasterizer::Rasterizer rasterizer(frameBuffer);
 
 	Scene::Camera camera;
-	camera.set_position(Math::Vector3(0.0f, 0.0f, 3.0f));
-	camera.set_target(Math::Vector3(0.0f, 0.0f, 0.0f));
-	camera.set_up(Math::Vector3(0.0f, 1.0f, 0.0f));
-	camera.set_near_plane(0.1f);
-	camera.set_far_plane(100.0f);
+	camera.transform.position = Math::Vector3(0.0f, 0.0f, 3.0f);
+	camera.transform.rotation = Math::Vector3(0.0f, 3.1415926535f, 0.0f);
 
 	const std::array<Math::Vector3, 8> cubeVertices = {
 		Math::Vector3(-0.5f, -0.5f, -0.5f),
