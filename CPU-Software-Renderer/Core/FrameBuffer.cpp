@@ -18,6 +18,7 @@ namespace Core
 		{
 			return;
 		}
+		// Row-major layout with y = 0 on the first row, matching a top-left screen origin.
 		size_t index = static_cast<size_t>(y) * width + x;
 		buffer.at(index) = color;
 	}

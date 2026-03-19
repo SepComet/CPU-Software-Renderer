@@ -17,6 +17,8 @@
 #include "Camera.h"
 #include "SDL_events.h"
 #include "SDL_keycode.h"
+#include "SDL_timer.h"
+#include <cstdlib>
 
 const uint32_t SDL_INIT_FLAGS = SDL_INIT_VIDEO;
 const int32_t width = 800;
@@ -128,8 +130,7 @@ struct CubeFace
 static ProjectedVertex ProjectToScreen(
 	const Math::Vector3& vertex,
 	const Math::Matrix4x4& mvp,
-	const int32_t screenWidth,
-	const int32_t screenHeight)
+	const Math::Matrix4x4& viewport)
 {
 	using namespace Math;
 
@@ -149,8 +150,9 @@ static ProjectedVertex ProjectToScreen(
 		return {};
 	}
 
-	const float screenX = (ndcX * 0.5f + 0.5f) * static_cast<float>(screenWidth - 1);
-	const float screenY = (1.0f - (ndcY * 0.5f + 0.5f)) * static_cast<float>(screenHeight - 1);
+	const Vector4 screen = viewport * Vector4(ndcX, ndcY, ndcZ, 1.0f);
+	const float screenX = screen.x;
+	const float screenY = screen.y;
 
 	return { Vector2(screenX, screenY).to_vector2Int(), true };
 }
@@ -247,6 +249,7 @@ int main(int argc, char* argv[])
 		const Math::Matrix4x4 view = camera.get_view_matrix();
 		const Math::Matrix4x4 modelView = view * model;
 		const Math::Matrix4x4 projection = camera.get_perspective_projection_matrix(aspectRatio);
+		const Math::Matrix4x4 viewport = camera.get_viewport_matrix(static_cast<float>(width), static_cast<float>(height));
 		const Math::Matrix4x4 mvp = projection * modelView;
 
 		std::array<Math::Vector3, 8> viewSpaceVertices;
@@ -254,7 +257,7 @@ int main(int argc, char* argv[])
 		for (size_t i = 0; i < cubeVertices.size(); ++i)
 		{
 			viewSpaceVertices[i] = (modelView * Math::Vector4::Point(cubeVertices[i])).to_vector3();
-			projectedVertices[i] = ProjectToScreen(cubeVertices[i], mvp, width, height);
+			projectedVertices[i] = ProjectToScreen(cubeVertices[i], mvp, viewport);
 		}
 
 		std::array<bool, 12> visibleEdges = {};

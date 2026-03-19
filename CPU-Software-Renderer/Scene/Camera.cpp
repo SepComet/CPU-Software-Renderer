@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include <Vector3.h>
 #include "MathUtil.h"
+#include <cmath>
 
 namespace Scene
 {
@@ -54,6 +55,18 @@ namespace Scene
 			0, 1.0f / std::tan(verticalFovRadians / 2), 0, 0,
 			0, 0, -(f + n) / (f - n), -(2 * f * n) / (f - n),
 			0, 0, -1, 0
+		);
+	}
+
+	Math::Matrix4x4 Camera::get_viewport_matrix(float width, float height) const
+	{
+		using namespace Math;
+
+		return Matrix4x4(
+			(width - 1) / 2, 0, 0, (width - 1) / 2,
+			0, -(height - 1) / 2, 0, (height - 1) / 2,
+			0, 0, 1, 0,
+			0, 0, 0, 1
 		);
 	}
 }

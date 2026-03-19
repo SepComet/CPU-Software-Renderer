@@ -72,11 +72,15 @@
     <ClCompile Include="Rasterizer\TriangleRasterizer.cpp">
       <Filter>源文件\Rasterizer</Filter>
     </ClCompile>
+    <ClCompile Include="Scene\Camera.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="TODO.md">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\DepthBuffer.h">

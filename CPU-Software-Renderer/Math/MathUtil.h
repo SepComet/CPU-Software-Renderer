@@ -5,7 +5,7 @@
 
 namespace Math
 {
-	static class MathUtil
+	class MathUtil
 	{
 	public:
 		static Matrix4x4 get_translate_matrix(const float x, const float y, const float z) { return get_translate_matrix(Vector3(x, y, z)); }
