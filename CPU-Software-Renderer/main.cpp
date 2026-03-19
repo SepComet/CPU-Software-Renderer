@@ -14,11 +14,15 @@
 #include "Color.h"
 #include "FrameBuffer.h"
 #include "Rasterizer.h"
+#include "TriangleRasterizer.h"
+#include "Triangle.h"
 #include "Camera.h"
 #include "SDL_events.h"
 #include "SDL_keycode.h"
 #include "SDL_timer.h"
 #include <cstdlib>
+#include <algorithm>
+#include "Vertex.h"
 
 const uint32_t SDL_INIT_FLAGS = SDL_INIT_VIDEO;
 const int32_t width = 800;
@@ -117,14 +121,24 @@ static bool EnsureTexture()
 
 struct ProjectedVertex
 {
-	Math::Vector2Int screen;
+	Math::Vector3 screen;
 	bool visible = false;
 };
 
 struct CubeFace
 {
 	std::array<int, 4> vertices;
-	std::array<int, 4> edges;
+};
+
+struct CubeTriangle
+{
+	std::array<int, 3> vertices;
+};
+
+struct TriangleDrawCommand
+{
+	RenderData::Triangle triangle;
+	float averageViewSpaceZ = 0.0f;
 };
 
 static ProjectedVertex ProjectToScreen(
@@ -151,10 +165,7 @@ static ProjectedVertex ProjectToScreen(
 	}
 
 	const Vector4 screen = viewport * Vector4(ndcX, ndcY, ndcZ, 1.0f);
-	const float screenX = screen.x;
-	const float screenY = screen.y;
-
-	return { Vector2(screenX, screenY).to_vector2Int(), true };
+	return { Math::Vector3(screen.x, screen.y, screen.z), true };
 }
 
 static bool IsFaceVisible(const CubeFace& face, const std::array<Math::Vector3, 8>& viewSpaceVertices)
@@ -174,6 +185,19 @@ static bool IsFaceVisible(const CubeFace& face, const std::array<Math::Vector3, 
 	return faceNormal.dot(faceCenter) > 0.0f;
 }
 
+static bool IsTriangleVisible(const CubeTriangle& triangle, const std::array<Math::Vector3, 8>& viewSpaceVertices)
+{
+	using namespace Math;
+
+	const Vector3& v0 = viewSpaceVertices[triangle.vertices[0]];
+	const Vector3& v1 = viewSpaceVertices[triangle.vertices[1]];
+	const Vector3& v2 = viewSpaceVertices[triangle.vertices[2]];
+	const Vector3 faceNormal = (v1 - v0).cross(v2 - v0);
+	const Vector3 faceCenter = (v0 + v1 + v2) / 3.0f;
+
+	return faceNormal.dot(faceCenter) > 0.0f;
+}
+
 int main(int argc, char* argv[])
 {
 	if (!EnsureSDLInitialized()) return -1;
@@ -186,6 +210,7 @@ int main(int argc, char* argv[])
 
 	Core::FrameBuffer frameBuffer(width, height);
 	Rasterizer::Rasterizer rasterizer(frameBuffer);
+	Rasterizer::TriangleRasterizer triangleRasterizer(frameBuffer);
 
 	Scene::Camera camera;
 	camera.transform.position = Math::Vector3(0.0f, 0.0f, 3.0f);
@@ -202,18 +227,21 @@ int main(int argc, char* argv[])
 		Math::Vector3(-0.5f, 0.5f, 0.5f)
 	};
 
-	const std::array<std::pair<int, int>, 12> cubeEdges = {
-		std::pair<int, int>(0, 1), std::pair<int, int>(1, 2), std::pair<int, int>(2, 3), std::pair<int, int>(3, 0),
-		std::pair<int, int>(4, 5), std::pair<int, int>(5, 6), std::pair<int, int>(6, 7), std::pair<int, int>(7, 4),
-		std::pair<int, int>(0, 4), std::pair<int, int>(1, 5), std::pair<int, int>(2, 6), std::pair<int, int>(3, 7)
-	};
 	const std::array<CubeFace, 6> cubeFaces = {
-		CubeFace{ { 0, 3, 2, 1 }, { 0, 1, 2, 3 } },
-		CubeFace{ { 4, 5, 6, 7 }, { 4, 5, 6, 7 } },
-		CubeFace{ { 0, 4, 7, 3 }, { 8, 7, 11, 3 } },
-		CubeFace{ { 1, 2, 6, 5 }, { 1, 10, 5, 9 } },
-		CubeFace{ { 0, 1, 5, 4 }, { 0, 9, 4, 8 } },
-		CubeFace{ { 3, 7, 6, 2 }, { 11, 6, 10, 2 } }
+		CubeFace{ { 0, 3, 2, 1 } },
+		CubeFace{ { 4, 5, 6, 7 } },
+		CubeFace{ { 0, 4, 7, 3 } },
+		CubeFace{ { 1, 2, 6, 5 } },
+		CubeFace{ { 0, 1, 5, 4 } },
+		CubeFace{ { 3, 7, 6, 2 } }
+	};
+	const std::array<CubeTriangle, 12> cubeTriangles = {
+		CubeTriangle{ { 0, 3, 2 } }, CubeTriangle{ { 0, 2, 1 } },
+		CubeTriangle{ { 4, 5, 6 } }, CubeTriangle{ { 4, 6, 7 } },
+		CubeTriangle{ { 0, 4, 7 } }, CubeTriangle{ { 0, 7, 3 } },
+		CubeTriangle{ { 1, 2, 6 } }, CubeTriangle{ { 1, 6, 5 } },
+		CubeTriangle{ { 0, 1, 5 } }, CubeTriangle{ { 0, 5, 4 } },
+		CubeTriangle{ { 3, 7, 6 } }, CubeTriangle{ { 3, 6, 2 } }
 	};
 
 	const RenderData::Color clearColor(18, 18, 24, 255);
@@ -257,36 +285,80 @@ int main(int argc, char* argv[])
 			projectedVertices[i] = ProjectToScreen(cubeVertices[i], mvp, viewport);
 		}
 
-		std::array<bool, 12> visibleEdges = {};
-		for (const CubeFace& face : cubeFaces)
+		std::array<bool, 6> visibleFaces = {};
+		for (size_t faceIndex = 0; faceIndex < cubeFaces.size(); ++faceIndex)
 		{
-			if (!IsFaceVisible(face, viewSpaceVertices))
-			{
-				continue;
-			}
-
-			for (const int edgeIndex : face.edges)
-			{
-				visibleEdges[edgeIndex] = true;
-			}
+			visibleFaces[faceIndex] = IsFaceVisible(cubeFaces[faceIndex], viewSpaceVertices);
 		}
 
-		for (size_t edgeIndex = 0; edgeIndex < cubeEdges.size(); ++edgeIndex)
+		std::array<TriangleDrawCommand, 12> drawCommands;
+		size_t drawCommandCount = 0;
+		for (const CubeTriangle& cubeTriangle : cubeTriangles)
 		{
-			if (!visibleEdges[edgeIndex])
+			if (!IsTriangleVisible(cubeTriangle, viewSpaceVertices))
 			{
 				continue;
 			}
 
-			const auto& edge = cubeEdges[edgeIndex];
-			const ProjectedVertex& start = projectedVertices[edge.first];
-			const ProjectedVertex& end = projectedVertices[edge.second];
-			if (!start.visible || !end.visible)
+			const ProjectedVertex& v0 = projectedVertices[cubeTriangle.vertices[0]];
+			const ProjectedVertex& v1 = projectedVertices[cubeTriangle.vertices[1]];
+			const ProjectedVertex& v2 = projectedVertices[cubeTriangle.vertices[2]];
+			if (!v0.visible || !v1.visible || !v2.visible)
 			{
 				continue;
 			}
 
-			rasterizer.DrawLine(start.screen, end.screen, cubeColor);
+			const Math::Vector3& viewV0 = viewSpaceVertices[cubeTriangle.vertices[0]];
+			const Math::Vector3& viewV1 = viewSpaceVertices[cubeTriangle.vertices[1]];
+			const Math::Vector3& viewV2 = viewSpaceVertices[cubeTriangle.vertices[2]];
+
+			drawCommands[drawCommandCount++] = TriangleDrawCommand{
+				RenderData::Triangle(
+					Scene::Vertex(v0.screen),
+					Scene::Vertex(v1.screen),
+					Scene::Vertex(v2.screen)
+				),
+				(viewV0.z + viewV1.z + viewV2.z) / 3.0f
+			};
+		}
+
+		std::sort(
+			drawCommands.begin(),
+			drawCommands.begin() + drawCommandCount,
+			[](const TriangleDrawCommand& a, const TriangleDrawCommand& b)
+			{
+				return a.averageViewSpaceZ < b.averageViewSpaceZ;
+			});
+
+		for (size_t i = 0; i < drawCommandCount; ++i)
+		{
+			triangleRasterizer.DrawTriangle2D(drawCommands[i].triangle, cubeColor);
+		}
+
+		for (size_t faceIndex = 0; faceIndex < cubeFaces.size(); ++faceIndex)
+		{
+			if (!visibleFaces[faceIndex])
+			{
+				continue;
+			}
+
+			const CubeFace& face = cubeFaces[faceIndex];
+			for (size_t edgeOffset = 0; edgeOffset < face.vertices.size(); ++edgeOffset)
+			{
+				const int startIndex = face.vertices[edgeOffset];
+				const int endIndex = face.vertices[(edgeOffset + 1) % face.vertices.size()];
+				const ProjectedVertex& start = projectedVertices[startIndex];
+				const ProjectedVertex& end = projectedVertices[endIndex];
+				if (!start.visible || !end.visible)
+				{
+					continue;
+				}
+
+				rasterizer.DrawLine(
+					Math::Vector2(start.screen.x, start.screen.y).to_vector2Int(),
+					Math::Vector2(end.screen.x, end.screen.y).to_vector2Int(),
+					clearColor);
+			}
 		}
 
 		SDL_UpdateTexture(texture, nullptr, frameBuffer.get_buffer(), width * sizeof(uint32_t));

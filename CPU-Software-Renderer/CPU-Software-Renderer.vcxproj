@@ -157,7 +157,7 @@
   <ItemGroup>
     <None Include="..\README.md" />
     <None Include="..\TODO.md" />
-    <None Include="TODO.md" />
+    <None Include="CONVENTIONS.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Asset\ObjLoader.h" />

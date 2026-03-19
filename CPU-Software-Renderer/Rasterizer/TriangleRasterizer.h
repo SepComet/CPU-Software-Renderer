@@ -14,6 +14,6 @@ namespace Rasterizer
 	public:
 		explicit TriangleRasterizer(Core::FrameBuffer& frameBuffer) :frameBuffer(frameBuffer) {};
 
-		void DrawTriangle2D(const RenderData::Triangle2D triangle, const RenderData::Color color);
+		void DrawTriangle2D(const RenderData::Triangle& triangle, const RenderData::Color color);
 	};
 }

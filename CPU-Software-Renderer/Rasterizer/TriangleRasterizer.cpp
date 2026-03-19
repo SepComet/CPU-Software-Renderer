@@ -8,7 +8,7 @@
 
 namespace Rasterizer
 {
-	void TriangleRasterizer::DrawTriangle2D(const RenderData::Triangle2D triangle, const RenderData::Color color)
+	void TriangleRasterizer::DrawTriangle2D(const RenderData::Triangle& triangle, const RenderData::Color color)
 	{
 		auto boundingBox = triangle.get_boundingBox();
 
@@ -21,7 +21,7 @@ namespace Rasterizer
 		{
 			for (int y = minY; y <= maxY; y++)
 			{
-				if (triangle.ContainsPixel(Math::Vector2(x, y)))
+				if (triangle.ContainsPixel(Math::Vector2Int(x, y)))
 				{
 					frameBuffer.set_pixel(Math::Vector2Int(x, y), color.to_rgba());
 				}

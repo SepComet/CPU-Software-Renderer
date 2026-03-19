@@ -77,11 +77,11 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="TODO.md">
-      <Filter>资源文件</Filter>
-    </None>
     <None Include="..\README.md" />
     <None Include="..\TODO.md" />
+    <None Include="CONVENTIONS.md">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\DepthBuffer.h">

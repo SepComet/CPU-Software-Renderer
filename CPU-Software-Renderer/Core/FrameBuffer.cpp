@@ -1,8 +1,6 @@
 #include "FrameBuffer.h"
 #include <cstdint>
-#include <iostream>
 #include <algorithm>
-using namespace Math;
 
 namespace Core
 {
