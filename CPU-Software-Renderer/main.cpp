@@ -171,7 +171,7 @@ static bool IsFaceVisible(const CubeFace& face, const std::array<Math::Vector3, 
 			viewSpaceVertices[face.vertices[2]] +
 			viewSpaceVertices[face.vertices[3]]) / 4.0f;
 
-	return faceNormal.dot(faceCenter) < 0.0f;
+	return faceNormal.dot(faceCenter) > 0.0f;
 }
 
 int main(int argc, char* argv[])
