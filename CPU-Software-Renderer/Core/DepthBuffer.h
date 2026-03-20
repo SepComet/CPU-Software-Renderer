@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "Color.h"
 #include "Vector2.h"
+#include <cmath>
 
 namespace Core
 {
@@ -11,7 +11,7 @@ namespace Core
 	private:
 		int32_t width;
 		int32_t height;
-		std::vector<uint8_t> buffer;
+		std::vector<float> buffer;
 
 	public:
 		int32_t get_width() const { return width; }
@@ -22,15 +22,16 @@ namespace Core
 
 		void* get_buffer() const { return (void*)buffer.data(); }
 
-		DepthBuffer(int32_t width, int32_t height) :width(width), height(height), buffer(std::vector<uint8_t>(width* height, 0)) {}
+		DepthBuffer(int32_t width, int32_t height) :width(width), height(height), buffer(std::vector<float>(width* height, INFINITY)) {}
 
-		void clear(const uint8_t depth);
+		void clear(const float depth = INFINITY);
 
-		void set_pixel(const Math::Vector2Int position, const uint8_t depth)
-		{
-			set_pixel(position.x, position.y, depth);
-		}
+		float get_depth(const Math::Vector2Int position) const { return get_depth(position.x, position.y); }
 
-		void set_pixel(const int32_t x, const int32_t y, const uint8_t depth);
+		float get_depth(const int32_t x, const int32_t y) const;
+
+		void set_depth(const Math::Vector2Int position, const float depth) { set_depth(position.x, position.y, depth); }
+
+		void set_depth(const int32_t x, const int32_t y, const float depth);
 	};
 };

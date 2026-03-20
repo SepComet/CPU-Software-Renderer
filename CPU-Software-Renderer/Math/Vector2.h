@@ -2,9 +2,13 @@
 #include <cstdint>
 #include <utility>
 #include <cmath>
+#include "Vector3.h"
 
 namespace Math
 {
+	struct Vector2;
+	struct Vector2Int;
+
 	struct Vector2Int
 	{
 		int32_t x = 0;
@@ -31,6 +35,7 @@ namespace Math
 
 		Vector2() : x(0), y(0) {}
 		Vector2(float x, float y) : x(x), y(y) {}
+		Vector2(const Vector2Int& other) :x(other.x), y(other.y) {}
 
 		/// <summary>
 		/// 交换当前 Vector2 对象与另一个 Vector2 对象的 x 和 y 的值
@@ -45,6 +50,11 @@ namespace Math
 		Vector2Int to_vector2Int() const
 		{
 			return Vector2Int(static_cast<int32_t>(std::lround(x)), static_cast<int32_t>(std::lround(y)));
+		}
+
+		Vector3 cross(const Vector2& other) const
+		{
+			return Vector3(0, 0, this->x * other.y - this->y * other.x);
 		}
 	};
 }

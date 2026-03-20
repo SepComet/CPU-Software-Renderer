@@ -2,6 +2,7 @@
 #include "Matrix4x4.h"
 #include "Vector3.h"
 #include <cmath>
+#include "Vector2.h"
 
 namespace Math
 {
@@ -96,6 +97,11 @@ namespace Math
 		}
 
 		static Vector3 cross(const Vector3& vec1, const Vector3& vec2)
+		{
+			return vec1.cross(vec2);
+		}
+
+		static Vector3 cross(const Vector2& vec1, const Vector2& vec2)
 		{
 			return vec1.cross(vec2);
 		}

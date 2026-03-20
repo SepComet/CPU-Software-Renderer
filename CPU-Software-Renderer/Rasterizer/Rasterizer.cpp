@@ -30,7 +30,7 @@ namespace Rasterizer
 		int32_t p = 2 * dy - dx;
 		for (int32_t x = start.x; x <= end.x; x++)
 		{
-			frameBuffer.set_pixel(x, y, color.to_rgba());
+			frameBuffer->set_pixel(x, y, color.to_rgba());
 			// 当 p >= 0 时，取上方像素点
 			if (p >= 0)
 			{
@@ -63,7 +63,7 @@ namespace Rasterizer
 		int32_t p = 2 * dx - dy;
 		for (int32_t y = start.y; y <= end.y; y++)
 		{
-			frameBuffer.set_pixel(x, y, color.to_rgba());
+			frameBuffer->set_pixel(x, y, color.to_rgba());
 			// 当 p >= 0 时，取上方像素点
 			if (p >= 0)
 			{

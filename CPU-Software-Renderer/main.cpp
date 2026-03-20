@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include "Vertex.h"
+#include "DepthBuffer.h"
 
 const uint32_t SDL_INIT_FLAGS = SDL_INIT_VIDEO;
 const int32_t width = 800;
@@ -135,12 +136,6 @@ struct CubeTriangle
 	std::array<int, 3> vertices;
 };
 
-struct TriangleDrawCommand
-{
-	RenderData::Triangle triangle;
-	float averageViewSpaceZ = 0.0f;
-};
-
 static ProjectedVertex ProjectToScreen(
 	const Math::Vector3& vertex,
 	const Math::Matrix4x4& mvp,
@@ -208,9 +203,10 @@ int main(int argc, char* argv[])
 
 	if (!EnsureTexture()) return -1;
 
-	Core::FrameBuffer frameBuffer(width, height);
-	Rasterizer::Rasterizer rasterizer(frameBuffer);
-	Rasterizer::TriangleRasterizer triangleRasterizer(frameBuffer);
+	Core::FrameBuffer* frameBuffer = new Core::FrameBuffer(width, height);
+	Core::DepthBuffer* depthBuffer = new Core::DepthBuffer(width, height);
+	Rasterizer::Rasterizer rasterizer(frameBuffer, depthBuffer);
+	Rasterizer::TriangleRasterizer triangleRasterizer(frameBuffer, depthBuffer);
 
 	Scene::Camera camera;
 	camera.transform.position = Math::Vector3(0.0f, 0.0f, 3.0f);
@@ -265,7 +261,8 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		frameBuffer.clear(clearColor);
+		frameBuffer->clear(clearColor);
+		depthBuffer->clear();
 
 		const float timeSeconds = static_cast<float>(SDL_GetTicks()) * 0.001f;
 		const Math::Matrix4x4 model =
@@ -291,7 +288,7 @@ int main(int argc, char* argv[])
 			visibleFaces[faceIndex] = IsFaceVisible(cubeFaces[faceIndex], viewSpaceVertices);
 		}
 
-		std::array<TriangleDrawCommand, 12> drawCommands;
+		std::array<RenderData::Triangle, 12> drawTriangles;
 		size_t drawCommandCount = 0;
 		for (const CubeTriangle& cubeTriangle : cubeTriangles)
 		{
@@ -312,27 +309,17 @@ int main(int argc, char* argv[])
 			const Math::Vector3& viewV1 = viewSpaceVertices[cubeTriangle.vertices[1]];
 			const Math::Vector3& viewV2 = viewSpaceVertices[cubeTriangle.vertices[2]];
 
-			drawCommands[drawCommandCount++] = TriangleDrawCommand{
+			drawTriangles[drawCommandCount++] =
 				RenderData::Triangle(
 					Scene::Vertex(v0.screen),
 					Scene::Vertex(v1.screen),
 					Scene::Vertex(v2.screen)
-				),
-				(viewV0.z + viewV1.z + viewV2.z) / 3.0f
-			};
+				);
 		}
-
-		std::sort(
-			drawCommands.begin(),
-			drawCommands.begin() + drawCommandCount,
-			[](const TriangleDrawCommand& a, const TriangleDrawCommand& b)
-			{
-				return a.averageViewSpaceZ < b.averageViewSpaceZ;
-			});
 
 		for (size_t i = 0; i < drawCommandCount; ++i)
 		{
-			triangleRasterizer.DrawTriangle2D(drawCommands[i].triangle, cubeColor);
+			triangleRasterizer.DrawTriangle2D(drawTriangles[i], cubeColor);
 		}
 
 		for (size_t faceIndex = 0; faceIndex < cubeFaces.size(); ++faceIndex)
@@ -361,7 +348,7 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		SDL_UpdateTexture(texture, nullptr, frameBuffer.get_buffer(), width * sizeof(uint32_t));
+		SDL_UpdateTexture(texture, nullptr, frameBuffer->get_buffer(), width * sizeof(uint32_t));
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, nullptr, nullptr);
 		SDL_RenderPresent(renderer);
