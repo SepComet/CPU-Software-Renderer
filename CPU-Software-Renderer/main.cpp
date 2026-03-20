@@ -1,6 +1,5 @@
 #include <iostream>
 #include <array>
-#include <cmath>
 #include <SDL.h>
 #include "SDL_video.h"
 #include "SDL_render.h"
@@ -21,7 +20,6 @@
 #include "SDL_keycode.h"
 #include "SDL_timer.h"
 #include <cstdlib>
-#include <algorithm>
 #include "Vertex.h"
 #include "DepthBuffer.h"
 

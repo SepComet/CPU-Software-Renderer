@@ -70,7 +70,7 @@ bool IsInTriangle(std::vector<Vector2> triangle, Vector2 point)
 
 ---
 
-## Step 2：MVP 变换（3D → 2D）
+## Step 2：MVP 与视口变换
 
 ### Model 变换
 Model 变换用于将模型从其自身的坐标空间变换到世界坐标空间，一般来说这个过程是被省略的，因为一般在定义模型时都会再定义一个位置和旋转，这里的定义就已经完成了 Model 变换的操作。
@@ -85,95 +85,81 @@ $$M_{View}=M_{rotation}^{-1} \times M_{translation}^{-1}=\begin{bmatrix} right.x
 - $M_{rotation}^{-1}$ 是由目标方向旋转到当前摄像机朝向的旋转变换矩阵
 
 ### Projection 变换
-Projection 变换用于将摄像头视锥里的各个模型投影到一个平面上，这里分为**正交投影**与**透视投影**，透视投影会产生近小远大的效果，而正交投影不会。
+Projection 变换用于将摄像头视锥里的各个模型投影到一个平面上，这里分为**正交投影**与**透视投影**，透视投影会产生近小远大的效果，而正交投影不会。用视锥来解释的话，正交投影下视锥会退化为长方体，近处与远处的东西一样大；透视投影下的视锥就是一个四棱台。要投影的平面是中心在坐标原点，边长为 2 的正方形，也就是说范围在 $[-1,1]^2$ 内，知道这个后面的缩放就好做了。
 
-核心矩阵：
+我们可以定义视锥的各项参数：
+- 近平面距离（离坐标原点 xy 平面的距离，为负值）：$near$（n）
+- 远平面距离（离坐标原点 xy 平面的距离，为负值）：$far$（f）
+- 近平面左边（离坐标原点 yz 平面的距离）：$left$（l）
+- 近平面右边（离坐标原点 yz 平面的距离）：$right$（r）
+- 近平面上边（离坐标原点 xz 平面的距离）：$top$（t）
+- 近平面下边（离坐标原点 xz 平面的距离）：$bottom$（b）
 
-```text
-Model
-View
-Projection
-```
+1. 正交投影（Orthographic Projection）：直接做平移缩放成 $[-1,1]^2$ 就行了
 
-流程：
+$$M_{orth}=\begin{bmatrix} \frac{2}{r-l} & 0 & 0 & -\frac{r + l}{r - l} \\ 0 & \frac{2}{t - b} & 0 & -\frac{t + b}{t - b} \\ 0 & 0 & \frac{2}{n - f} & -\frac{n + f}{f - n} \\ 0 & 0 & 0 & 1\end{bmatrix}$$
 
-```text
-model space
-↓
-world space
-↓
-view space
-↓
-clip space
-↓
-screen space
-```
+2. 透视投影（Perspective Projection）：相较于正交投影会麻烦的多，因为需要处理 z 轴的变形来产生近大远小的效果。但是我们可以在正交投影矩阵的基础上再应用一个矩阵乘法就可以得到最终的透视投影矩阵，整个推导过程需要通过在视锥的 yz 平面做一个剖面，构造相似三角形取特殊值来解方程
 
-公式：
+$$M_{perp}=\begin{bmatrix} \frac{1}{aspectRatio \times \tan(fov / 2)} & 0 & 0 & 0 \\ 0 & \frac{1}{\tan(fov / 2)} & 0 & 0 \\ 0 & 0 & -\frac{f + n}{f - n} & -\frac{2 \times f \times n}{f - n} \\ 0 & 0 & -1 & 0\end{bmatrix}$$
 
-```text
-screen_pos = MVP * vertex
-```
+其中：
+- $aspectRatio$ 宽高比：$width / height$
+- $fov$ 垂直可视角：$\tan(fov/2)=\frac{height/2}{-n}$
 
-这一步完成后：
+### Viewport 变换
+经过 Projection 变换后我们的三维坐标就会被映射到二维的 $[-1, 1]^2$ 平面中，Viewport（视口）变换就是用来将这个边长为 2 的正方形变换到屏幕空间中，这个过程需要两步，一是将平面缩放到屏幕分辨率（比如 1920*1080），然后就是平移到正确的位置。
 
-你可以画一个 **旋转的立方体**。
+$$M_{Viewport}=\begin{bmatrix} \frac{width-1}{2} & 0 & 0 & \frac{width-1}{2} \\ 0 & -\frac{height-1}{2} & 0 & \frac{height-1}{2} \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1\end{bmatrix}$$
+
+其中：
+- $width$ 与 $height$ 分别表示目标分辨率的宽和高
+- $-\frac{height}{2}$ 的负号：这是由像素坐标起点决定的，这里以屏幕左上方作为坐标起点
 
 ---
 
-## Step 3：深度测试（Z-buffer）
+## Step 4. 深度测试
 
-解决遮挡问题。
+### 重心插值（属性插值）
+重心插值是为了解决三角形内部各点属性的取值问题，我们认为三角形的各项属性是定义在顶点上的，那么三角形内部的点的属性就需要根据三个顶点计算得到，而重心坐标就是一个比较好的计算方法。
 
-没有深度测试会出现：
+三角形的重心是指三角形中的一个点，将这个三角形分成三个面积相等的三角形，也就是 $$\frac{1}{3}S_{\triangle{ABC}}=S_{\triangle{PAB}}=S_{\triangle{PBC}}=S_{\triangle{PCA}}$$ 稍微变形可以得到 $$S_{\triangle{ABC}}=S_{\triangle{PAB}}+S_{\triangle{PBC}}+S_{\triangle{PCA}}$$ 现在这三个三角形占总面积的比例都是 $\frac{1}{3}$，也就是说 $(\lambda_1, \lambda_2, \lambda_3) = (\frac{1}{3}, \frac{1}{3}, \frac{1}{3})$，我们只要保证三个 $\lambda$ 之和为 1，就可以将重心坐标推广到所有的坐标上，只要计算重心坐标在那个点时各个三角形所占的面积比重，就可以得到这个点受三个顶点属性的影响程度。
 
-```text
-后面的三角形覆盖前面的
+```c++
+/// <summary>
+/// 给定屏幕像素坐标，输出该点的面积坐标
+/// </summary>
+/// <param name="pos">要计算的屏幕像素点</param>
+/// <param name="w0">面积坐标的 x 分量（引用）</param>
+/// <param name="w1">面积坐标的 y 分量（引用）</param>
+/// <param name="w2">面积坐标的 z 分量（引用）</param>
+/// <returns>是否计算成功</returns>
+bool get_barycentric(const Math::Vector2& p, float& w0, float& w1, float& w2) const
+{
+	const float x0 = v0.position.x;
+	const float y0 = v0.position.y;
+	const float x1 = v1.position.x;
+	const float y1 = v1.position.y;
+	const float x2 = v2.position.x;
+	const float y2 = v2.position.y;
+
+	const float square2D = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2);
+	if (std::abs(square2D) < 1e-6f)
+	{
+		return false;
+	}
+
+	w0 = ((y1 - y2) * (p.x - x2) + (x2 - x1) * (p.y - y2)) / square2D;
+	w1 = ((y2 - y0) * (p.x - x2) + (x0 - x2) * (p.y - y2)) / square2D;
+	w2 = 1.0f - w0 - w1;
+	return true;
+}
 ```
 
-实现：
+这里的计算是投影后面积坐标的计算，也就是在二维空间下计算，仍然能用于判断任一像素点是否在三角形内，以及做深度信息的插值，但在做其他信息的插值时还需要做额外的恢复处理
 
-```text
-depth_buffer[x][y]
-```
-
-核心逻辑：
-
-```text
-if z < depth_buffer
-    更新像素
-```
-
-这一步完成后：
-
-**遮挡关系正确。**
-
----
-
-## Step 4：重心插值（属性插值）
-
-你已经有：
-
-```text
-α β γ
-```
-
-现在可以插值：
-
-```text
-颜色
-深度
-法线
-纹理坐标
-```
-
-例如：
-
-```text
-color = α*c1 + β*c2 + γ*c3
-```
-
-这是 **GPU 的核心思想之一**。
+### 使用 depthBuffer
+在光栅化写入 frameBuffer 时，我们需要先判断是否能够写入，也就是将该点的深度信息与 depthBuffer 中的信息进行比对，如果比 depthBuffer 里的数据更小（也可以是更大，主要看项目约定），就可以写入 frameBuffer 并更新 depthBuffer，每个点的深度信息都可以通过插值来得到。
 
 ---
 
